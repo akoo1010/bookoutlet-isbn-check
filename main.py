@@ -35,7 +35,7 @@ from sheets import (
 
 CREDENTIALS_FILE = "credentials.json"   # path to your service account key file
 
-SPREADSHEET_ID   = "19S2cvooTn28h7j_HzSZS5cQYcDz9JOI4DhoZ3M7yTOI"  # the long ID from your sheet's URL
+SPREADSHEET_ID   = "YOUR_SPREADSHEET_ID_HERE"  # the long ID from your sheet's URL
 SHEET_NAME       = "Sheet1"             # exact name of the tab
 
 ISBN_COLUMN      = "F"                  # column that holds the ISBNs
