@@ -1,6 +1,6 @@
 # BookOutlet ISBN Checker
 
-Reads a list of ISBNs from a Google Sheet, checks [bookoutlet.com](https://www.bookoutlet.com) for availability and price, and writes the results back to the sheet.
+Reads a list of ISBNs from a Google Sheet, checks [bookoutlet.com](https://www.bookoutlet.com) for availability and price, and writes the results back to the sheet. And where's a great source for ISBNs? [Goodreads export](https://help.goodreads.com/s/article/How-do-I-import-or-export-my-books-1553870934590) 
 
 ## How it works
 
