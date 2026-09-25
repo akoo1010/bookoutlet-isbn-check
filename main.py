@@ -102,12 +102,11 @@ def main() -> None:
 
         result = search_isbn(isbn, session)
 
-        error   = result.get("error")
-        is_real_error = error and not error.startswith("_")  # internal codes start with _
+        error = result.get("error")
 
-        if is_real_error:
-            price_val  = f"Error: {error}"
-            status_val = "Error"
+        if error:
+            price_val  = None                  # don't touch the price cell, so the row is retried next run
+            status_val = f"Error: {error}"
             print(f"ERROR — {error}")
             errors.append((isbn, error))
 
@@ -123,7 +122,8 @@ def main() -> None:
             print("Not found")
 
         # Write back to the sheet
-        sheet.update_cell(row, price_col_idx, price_val)
+        if price_val is not None:
+            sheet.update_cell(row, price_col_idx, price_val)
         if status_col_idx:
             sheet.update_cell(row, status_col_idx, status_val)
 

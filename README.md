@@ -4,13 +4,17 @@ Reads a list of ISBNs from a Google Sheet, checks [bookoutlet.com](https://www.b
 
 ## How it works
 
-For each ISBN the script hits `bookoutlet.com/products/{ISBN}B` directly:
+bookoutlet.com is a Shopify store whose product URLs include the book title, so for each ISBN the script:
 
-- **404** → book is not listed on the site → writes "Not found"
-- **200, inventory = 0** → listed but out of stock → writes "Not found"
-- **200, inventory > 0** → in stock → writes the sale price and "Available"
+1. Searches the store for a product whose barcode is that ISBN (`/search/suggest.json`)
+2. Reads the matching product's data (`/products/{handle}.js`) for availability and price
 
-Results are written to a configurable status column and price column. On subsequent runs, rows that already have a price are skipped unless `--force` is passed.
+- **No matching product** → book is not listed on the site → writes "Not found"
+- **Listed, but sold out** → writes "Not found"
+- **In stock** → writes the lowest in-stock price and "Available"
+- **Lookup failed** (network error, blocked, invalid ISBN) → writes "Error: …" to the status column and leaves the price cell alone
+
+Results are written to a configurable status column and price column. On subsequent runs, rows that already have a price are skipped unless `--force` is passed, so errored rows are retried automatically.
 
 ## Prerequisites
 
@@ -79,14 +83,20 @@ python main.py
 
 # Re-check every row, overwriting existing values
 python main.py --force
+
+# Check a few ISBNs without touching the sheet
+python scraper.py 9781455539741 0446676217
+
+# Run the tests (no network access needed)
+python -m unittest
 ```
 
 ## Important Notes
 
 *   **Header Rows:** The script is configured to start reading data at row 2 (`START_ROW = 2`), assuming row 1 contains column headers. If your sheet doesn't have headers, change `START_ROW` to `1` in `main.py`.
 *   **Sheet Tab Name:** The script looks for a tab named exactly `"Sheet1"` by default. If you import a CSV (like a Goodreads export), Google Sheets often names the tab after the file. Ensure `SHEET_NAME` in `main.py` exactly matches the name of the tab at the bottom of your screen.
-*   **ISBN Formatting:** You don't need to clean your ISBNs beforehand. The script automatically strips dashes and spaces (e.g., `978-3-16-148410-0` becomes `9783161484100`) before searching.
-*   **Execution Speed:** To avoid triggering Cloudflare's bot protection on BookOutlet, the script includes a randomized 1 to 2.5-second delay between requests. Consequently, checking a list of 1,000 books will take roughly 30-40 minutes.
+*   **ISBN Formatting:** You don't need to clean your ISBNs beforehand. The script strips dashes, spaces and Goodreads' `="..."` wrapper, converts ISBN-10s to ISBN-13 (e.g., `0-8044-2957-X` becomes `9780804429573`), and restores leading zeros lost when a cell was stored as a number. Values that aren't valid ISBNs are marked "Error: Invalid ISBN" without contacting the site.
+*   **Execution Speed:** To avoid being rate-limited by BookOutlet, the script includes a randomized 1 to 2.5-second delay between requests. Consequently, checking a list of 1,000 books will take roughly 30-40 minutes.
 *   **Security:** Be careful not to accidentally commit your modified `main.py` file to a public repository, as it contains your private `SPREADSHEET_ID`. The `credentials.json` file is already ignored by default via `.gitignore`.
 
 ## Project structure
@@ -94,8 +104,9 @@ python main.py --force
 ```
 .
 ├── main.py          # Entry point and configuration
-├── scraper.py       # BookOutlet HTTP scraping logic
+├── scraper.py       # BookOutlet lookup logic
 ├── sheets.py        # Google Sheets read/write helpers
+├── test_scraper.py  # Tests for the lookup, using saved bookoutlet.com responses
 ├── credentials.json # Service account key (not committed)
 └── requirements.txt # Python dependencies
 ```
@@ -106,5 +117,4 @@ python main.py --force
 |---|---|
 | `gspread` | Google Sheets API client |
 | `google-auth` | Service account authentication |
-| `cloudscraper` | Handles Cloudflare JS challenges |
-| `beautifulsoup4` + `lxml` | HTML parsing |
+| `cloudscraper` | HTTP client that handles Cloudflare JS challenges |
