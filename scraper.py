@@ -18,6 +18,8 @@ an ISBN. Instead each lookup:
 Uses cloudscraper to handle Cloudflare's JS challenge automatically.
 """
 
+from __future__ import annotations  # allows "str | None" hints on Python 3.9
+
 import random
 import re
 import time
